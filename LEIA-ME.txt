@@ -1,0 +1,12 @@
+PATCH V2 - Vercel
+
+Substitua no GitHub estes arquivos pelos deste pacote:
+- vercel.json
+- api/index.ts
+- api/health.ts (novo)
+- server/routers.ts
+- server/_core/trpc.ts
+- server/_core/sdk.ts
+- server/_core/oauth.ts
+
+Motivo: Vercel Functions nao suportam tsconfig Path Mappings; o backend usava imports @shared.

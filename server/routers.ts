@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { nanoid } from "nanoid";
-import { COOKIE_NAME } from "@shared/const";
-import { calculateServerTotal, PRODUCT_ID, productCatalog } from "@shared/catalog";
+import { COOKIE_NAME } from "../shared/const";
+import { calculateServerTotal, PRODUCT_ID, productCatalog } from "../shared/catalog";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";

@@ -3,11 +3,19 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/trpc/:path*",
       "destination": "/api/index"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/api/oauth/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/manus-storage/:path*",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/((?!api/|manus-storage/).*)",
       "destination": "/index.html"
     }
   ]
