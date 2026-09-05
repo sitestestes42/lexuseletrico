@@ -1,28 +1,20 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import type { User } from "../../drizzle/schema";
-import { sdk } from "./sdk";
+import { authenticateSupabaseRequest, type AuthenticatedUser } from "./auth";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
-  user: User | null;
+  user: AuthenticatedUser | null;
 };
 
-export async function createContext(
-  opts: CreateExpressContextOptions
-): Promise<TrpcContext> {
-  let user: User | null = null;
-
+export async function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
+  let user: AuthenticatedUser | null = null;
   try {
-    user = await sdk.authenticateRequest(opts.req);
+    user = await authenticateSupabaseRequest(opts.req, opts.res);
   } catch (error) {
-    // Authentication is optional for public procedures.
-    user = null;
+    // Public procedures must never crash just because authentication is unavailable.
+    console.warn("[Auth] Falha ao resolver sessão:", error);
   }
 
-  return {
-    req: opts.req,
-    res: opts.res,
-    user,
-  };
+  return { req: opts.req, res: opts.res, user };
 }

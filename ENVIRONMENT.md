@@ -1,12 +1,30 @@
-# Variáveis de ambiente
+# Variáveis de ambiente — Vercel
 
-Configure estas variáveis em **Settings → Secrets / Environment Variables** do projeto. Não edite arquivos `.env` no código-fonte e não faça commit de credenciais.
+Configure em **Settings → Environment Variables**. Para login + pedidos, as três primeiras variáveis essenciais são `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` e `DATABASE_URL`:
 
 ```text
 SUPABASE_URL=
 SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
-PANTERAPAY_SECRET_KEY=
+DATABASE_URL=
+PANTEPAY_API_URL=
+PANTEPAY_SECRET_KEY=
+PANTEPAY_WEBHOOK_SECRET=
 ```
 
-`SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` são dados de configuração pública apenas quando a integração oficial estiver habilitada. `SUPABASE_SECRET_KEY` e `PANTERAPAY_SECRET_KEY` são sempre privados e devem ser lidos exclusivamente no backend. Nenhuma dessas variáveis está necessária para visualizar a vitrine atual; o checkout real com PantePay e a migração completa para Supabase dependem da documentação e configuração externa correspondentes.
+## Exposição
+
+Configuração pública:
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `PANTEPAY_API_URL` (desde que o provedor trate a URL como pública)
+
+Segredos — backend apenas:
+- `SUPABASE_SECRET_KEY`
+- `DATABASE_URL`
+- `PANTEPAY_SECRET_KEY`
+- `PANTEPAY_WEBHOOK_SECRET`
+
+A V3 não usa `VITE_OAUTH_PORTAL_URL`, `OAUTH_SERVER_URL`, `JWT_SECRET`, `BUILT_IN_FORGE_API_URL` nem `BUILT_IN_FORGE_API_KEY`.
+
+`SUPABASE_SECRET_KEY` não é necessária para o login da V3; ela pode permanecer cadastrada para futuras operações administrativas server-side.

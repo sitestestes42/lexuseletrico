@@ -1,44 +1,50 @@
 {
   "include": [
-    "client/src/**/*",
-    "shared/**/*",
-    "server/**/*",
-    "api/**/*"
+    "client/src/App.tsx",
+    "client/src/main.tsx",
+    "client/src/const.ts",
+    "client/src/lib/trpc.ts",
+    "client/src/_core/hooks/useAuth.ts",
+    "client/src/components/ErrorBoundary.tsx",
+    "client/src/pages/Home.tsx",
+    "client/src/pages/Checkout.tsx",
+    "client/src/pages/Account.tsx",
+    "client/src/pages/Login.tsx",
+    "client/src/pages/NotFound.tsx",
+    "shared/catalog.ts",
+    "shared/const.ts",
+    "drizzle/schema.ts",
+    "server/db.ts",
+    "server/pantepay.ts",
+    "server/routers.ts",
+    "server/_core/auth.ts",
+    "server/_core/context.ts",
+    "server/_core/env.ts",
+    "server/_core/index.ts",
+    "server/_core/trpc.ts",
+    "server/_core/vite.ts",
+    "api/**/*.ts",
+    "vite.config.ts",
+    "drizzle.config.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "build",
-    "dist",
-    "**/*.test.ts"
-  ],
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
     "module": "ESNext",
     "strict": true,
-    "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable"
-    ],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "jsx": "preserve",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "baseUrl": ".",
-    "types": [
-      "node",
-      "vite/client"
-    ],
+    "types": ["node", "vite/client"],
     "paths": {
-      "@/*": [
-        "./client/src/*"
-      ],
-      "@shared/*": [
-        "./shared/*"
-      ]
+      "@/*": ["./client/src/*"],
+      "@shared/*": ["./shared/*"]
     }
   }
 }

@@ -1,9 +1,8 @@
-import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
-import { COOKIE_NAME } from "../shared/const";
+import { z } from "zod";
 import { calculateServerTotal, PRODUCT_ID, productCatalog } from "../shared/catalog";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
+import { signOutSupabaseSession } from "./_core/auth";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getOrderByIdempotencyKey, insertOrderWithItems } from "./db";
 
@@ -19,23 +18,32 @@ const createOrderSchema = z.object({
 });
 
 export const appRouter = router({
-  system: systemRouter,
   auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    me: publicProcedure.query(({ ctx }) => ctx.user),
+    logout: publicProcedure.mutation(async ({ ctx }) => {
+      await signOutSupabaseSession(ctx.req, ctx.res);
       return { success: true } as const;
     }),
   }),
   orders: router({
     create: protectedProcedure.input(createOrderSchema).mutation(async ({ ctx, input }) => {
+      if (ctx.user.id === null) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Sua sessão está ativa, mas as tabelas do banco ainda não estão prontas. Aplique a migração PostgreSQL do projeto no Supabase.",
+        });
+      }
+
       const uniqueVariants = new Set(input.lines.map((line) => line.variant));
       if (uniqueVariants.size !== input.lines.length) {
-        throw new Error("Cada variante deve aparecer apenas uma vez no pedido.");
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cada variante deve aparecer apenas uma vez no pedido." });
       }
+
       const totalCents = calculateServerTotal(input.lines);
-      if (totalCents <= 0) throw new Error("Não foi possível validar o valor do pedido.");
+      if (totalCents <= 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Não foi possível validar o valor do pedido." });
+      }
+
       const existing = await getOrderByIdempotencyKey(ctx.user.id, input.idempotencyKey);
       if (existing) {
         return {
@@ -45,6 +53,7 @@ export const appRouter = router({
           message: "Este pedido já foi validado. Nenhum pedido duplicado foi criado.",
         };
       }
+
       const orderId = nanoid(20);
       await insertOrderWithItems({
         id: orderId,
@@ -58,11 +67,12 @@ export const appRouter = router({
           unitPriceCents: productCatalog.promotionalPriceCents,
         })),
       });
+
       return {
         orderId,
         status: "pending" as const,
         total: totalCents,
-        message: "Pedido validado e criado como pendente. O provedor de pagamento ainda precisa ser configurado.",
+        message: "Pedido validado e criado como pendente. O pagamento será conectado à PantePay na próxima etapa.",
       };
     }),
   }),
