@@ -33,14 +33,24 @@ export async function POST(request: Request) {
     const email = typeof body.email === "string" ? body.email.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
+    const captchaToken = typeof body.captchaToken === "string" ? body.captchaToken.trim() : "";
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 6 || password.length > 128) {
       return Response.json({ error: "Informe um e-mail válido e uma senha com pelo menos 6 caracteres." }, { status: 400 });
+    }
+    if (!captchaToken) {
+      return Response.json({ error: "Conclua a verificação hCaptcha antes de criar a conta." }, { status: 400 });
     }
 
     const response = await fetch(`${url}/auth/v1/signup`, {
       method: "POST",
       headers: authHeaders(key),
-      body: JSON.stringify({ email, password, ...(name ? { data: { name } } : {}) }),
+      body: JSON.stringify({
+        email,
+        password,
+        ...(name ? { data: { name } } : {}),
+        gotrue_meta_security: { captcha_token: captchaToken },
+      }),
       cache: "no-store",
     });
     if (!response.ok) return Response.json({ error: await errorMessage(response) }, { status: response.status });

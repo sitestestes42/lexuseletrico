@@ -1,18 +1,16 @@
-PATCH V5 - autenticação nativa para Vercel
+PATCH V6 — hCaptcha + Supabase Auth
 
-Substitua apenas estes arquivos no GitHub:
-api/auth/me.ts
-api/auth/login.ts
-api/auth/signup.ts
-api/auth/logout.ts
+Arquivos alterados:
+- client/src/pages/Login.tsx
+- client/src/index.css
+- api/auth/login.ts
+- api/auth/signup.ts
 
-Esta versão não importa Express, tRPC, cookie, Drizzle ou arquivos de server/ para o fluxo de autenticação.
-Ela usa apenas Request/Response/fetch nativos, o mesmo formato que já funciona em api/health.ts.
+O site exibe hCaptcha em Entrar/Criar conta, envia captchaToken à API e a API repassa ao Supabase como gotrue_meta_security.captcha_token.
 
-Depois do deploy teste:
-https://lexusshoper.store/api/auth/me
+Vercel:
+VITE_HCAPTCHA_SITEKEY=089a13f6-f6e0-4982-9604-b9e4f5021192
 
-Sem login, o esperado é:
-{"user":null}
+A sitekey é pública. A SECRET do hCaptcha deve ficar APENAS no Supabase > Authentication > Attack Protection.
 
-Se as variáveis SUPABASE_URL ou SUPABASE_PUBLISHABLE_KEY estiverem ausentes, a própria rota retorna JSON informando isso em vez de FUNCTION_INVOCATION_FAILED.
+Depois do upload no GitHub, espere o deploy e teste /entrar.
