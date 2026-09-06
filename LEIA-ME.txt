@@ -1,28 +1,18 @@
-PATCH V4 - Lexus Elétricos / Vercel + Supabase Auth
+PATCH V5 - autenticação nativa para Vercel
 
-Objetivo:
-- parar de usar /api/index para login/cadastro;
-- criar Functions Vercel diretas para /api/auth/*;
-- remover tRPC do fluxo de autenticação e checkout no navegador;
-- manter os arquivos antigos no repositório por enquanto, sem quebrar o deploy.
+Substitua apenas estes arquivos no GitHub:
+api/auth/me.ts
+api/auth/login.ts
+api/auth/signup.ts
+api/auth/logout.ts
 
-Faça upload do CONTEÚDO desta pasta na raiz do mesmo repositório GitHub.
-Os arquivos com o mesmo nome devem ser substituídos.
+Esta versão não importa Express, tRPC, cookie, Drizzle ou arquivos de server/ para o fluxo de autenticação.
+Ela usa apenas Request/Response/fetch nativos, o mesmo formato que já funciona em api/health.ts.
 
-Não apague as variáveis do Vercel:
-SUPABASE_URL
-SUPABASE_PUBLISHABLE_KEY
-SUPABASE_SECRET_KEY
-DATABASE_URL
-PANTEPAY_API_URL
-PANTEPAY_SECRET_KEY
-PANTEPAY_WEBHOOK_SECRET
+Depois do deploy teste:
+https://lexusshoper.store/api/auth/me
 
-Depois do deploy, teste nesta ordem:
-1) /api/health
-2) /api/auth/me  -> deve responder {"user":null} se não estiver logado
-3) /entrar       -> criar conta
-4) /api/auth/me  -> depois do login deve mostrar o usuário
-5) /checkout
+Sem login, o esperado é:
+{"user":null}
 
-Se o Supabase exigir confirmação de e-mail, o cadastro vai retornar sucesso e pedir para confirmar o e-mail antes do login.
+Se as variáveis SUPABASE_URL ou SUPABASE_PUBLISHABLE_KEY estiverem ausentes, a própria rota retorna JSON informando isso em vez de FUNCTION_INVOCATION_FAILED.

@@ -1,38 +1,58 @@
-import type { ApiRequest, ApiResponse, SupabaseSession } from "../../server/auth-serverless";
-import { json, parseSupabaseError, readJsonBody, setSessionCookies, supabasePasswordLogin, validEmail, validPassword } from "../../server/auth-serverless";
+const ACCESS_COOKIE = "lexus_access_token";
+const REFRESH_COOKIE = "lexus_refresh_token";
+const REFRESH_MAX_AGE = 60 * 60 * 24 * 30;
 
-export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    json(res, 405, { error: "Método não permitido." });
-    return;
-  }
+function env() {
+  return {
+    url: (process.env.SUPABASE_URL ?? "").replace(/\/+$/, ""),
+    key: process.env.SUPABASE_PUBLISHABLE_KEY ?? "",
+  };
+}
 
+function authHeaders(key: string) {
+  return { apikey: key, "content-type": "application/json" };
+}
+
+function cookie(name: string, value: string, maxAge: number) {
+  return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+}
+
+async function errorMessage(response: Response) {
   try {
-    const body = await readJsonBody(req);
-    const email = typeof body.email === "string" ? body.email.trim() : body.email;
-    const password = body.password;
-    if (!validEmail(email) || !validPassword(password)) {
-      json(res, 400, { error: "Informe um e-mail válido e uma senha com pelo menos 6 caracteres." });
-      return;
+    const body = await response.json() as any;
+    return body?.msg || body?.message || body?.error_description || body?.error || body?.code || `Supabase respondeu ${response.status}`;
+  } catch { return `Supabase respondeu ${response.status}`; }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { url, key } = env();
+    if (!url || !key) return Response.json({ error: "SUPABASE_URL ou SUPABASE_PUBLISHABLE_KEY ausente no Vercel." }, { status: 500 });
+
+    const body = await request.json().catch(() => ({})) as any;
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 6 || password.length > 128) {
+      return Response.json({ error: "Informe um e-mail válido e uma senha com pelo menos 6 caracteres." }, { status: 400 });
     }
 
-    const response = await supabasePasswordLogin(email, password);
-    if (!response.ok) {
-      json(res, response.status === 400 ? 401 : response.status, { error: await parseSupabaseError(response) });
-      return;
-    }
+    const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: authHeaders(key),
+      body: JSON.stringify({ email, password }),
+      cache: "no-store",
+    });
+    if (!response.ok) return Response.json({ error: await errorMessage(response) }, { status: response.status === 400 ? 401 : response.status });
 
-    const session = await response.json() as SupabaseSession;
-    if (!session.access_token || !session.refresh_token) {
-      json(res, 502, { error: "O Supabase não retornou uma sessão válida." });
-      return;
-    }
+    const session = await response.json() as any;
+    if (!session.access_token || !session.refresh_token) return Response.json({ error: "O Supabase não retornou uma sessão válida." }, { status: 502 });
 
-    setSessionCookies(req, res, session);
-    json(res, 200, { ok: true });
+    const headers = new Headers({ "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    headers.append("set-cookie", cookie(ACCESS_COOKIE, session.access_token, Math.max(60, Number(session.expires_in) || 3600)));
+    headers.append("set-cookie", cookie(REFRESH_COOKIE, session.refresh_token, REFRESH_MAX_AGE));
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   } catch (error) {
     console.error("[api/auth/login]", error);
-    json(res, 500, { error: error instanceof Error ? error.message : "Não foi possível entrar." });
+    return Response.json({ error: error instanceof Error ? error.message : "Não foi possível entrar." }, { status: 500 });
   }
 }
