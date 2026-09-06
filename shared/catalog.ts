@@ -20,8 +20,8 @@ export const productCatalog: ProductCatalogItem = {
   slug: "bicicleta-eletrica-inow-1000w",
   description:
     "Motor com 1000 W de potência que permite atingir velocidade máxima de 45 km/h para deslocamentos rápidos na cidade.",
-  originalPriceCents: 659050,
-  promotionalPriceCents: 155000,
+  originalPriceCents: 669999,
+  promotionalPriceCents: 359990,
   variants: {
     Preto: [
       {

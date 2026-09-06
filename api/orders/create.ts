@@ -1,7 +1,7 @@
 const ACCESS_COOKIE = "lexus_access_token";
 
 const PRODUCT_ID = "inow-1000w";
-const UNIT_PRICE_CENTS = 155000;
+const UNIT_PRICE_CENTS = 359990;
 const MAX_QUANTITY = 10;
 const ALLOWED_VARIANTS = new Set(["Preto", "Caramelo"]);
 
@@ -297,7 +297,7 @@ export async function POST(request: Request) {
       orderId,
       status: "pending",
       total: totalCents,
-      message: "Pedido validado e criado como pendente. Agora podemos conectar a etapa de pagamento da PantePay.",
+      message: "Pedido criado com segurança. Agora gere o PIX para concluir o pagamento.",
     });
   } catch (error) {
     console.error("[api/orders/create]", error);
