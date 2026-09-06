@@ -1,12 +1,28 @@
-PATCH V2 - Vercel
+PATCH V4 - Lexus Elétricos / Vercel + Supabase Auth
 
-Substitua no GitHub estes arquivos pelos deste pacote:
-- vercel.json
-- api/index.ts
-- api/health.ts (novo)
-- server/routers.ts
-- server/_core/trpc.ts
-- server/_core/sdk.ts
-- server/_core/oauth.ts
+Objetivo:
+- parar de usar /api/index para login/cadastro;
+- criar Functions Vercel diretas para /api/auth/*;
+- remover tRPC do fluxo de autenticação e checkout no navegador;
+- manter os arquivos antigos no repositório por enquanto, sem quebrar o deploy.
 
-Motivo: Vercel Functions nao suportam tsconfig Path Mappings; o backend usava imports @shared.
+Faça upload do CONTEÚDO desta pasta na raiz do mesmo repositório GitHub.
+Os arquivos com o mesmo nome devem ser substituídos.
+
+Não apague as variáveis do Vercel:
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SECRET_KEY
+DATABASE_URL
+PANTEPAY_API_URL
+PANTEPAY_SECRET_KEY
+PANTEPAY_WEBHOOK_SECRET
+
+Depois do deploy, teste nesta ordem:
+1) /api/health
+2) /api/auth/me  -> deve responder {"user":null} se não estiver logado
+3) /entrar       -> criar conta
+4) /api/auth/me  -> depois do login deve mostrar o usuário
+5) /checkout
+
+Se o Supabase exigir confirmação de e-mail, o cadastro vai retornar sucesso e pedir para confirmar o e-mail antes do login.

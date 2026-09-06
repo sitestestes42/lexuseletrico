@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { consumeLoginReturnPath } from "@/const";
-import { trpc } from "@/lib/trpc";
 
 type Mode = "login" | "signup";
 
@@ -15,7 +14,6 @@ type AuthResponse = {
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const utils = trpc.useUtils();
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -47,7 +45,6 @@ export default function Login() {
         return;
       }
 
-      await utils.auth.me.invalidate();
       setLocation(consumeLoginReturnPath());
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Não foi possível concluir a autenticação.");

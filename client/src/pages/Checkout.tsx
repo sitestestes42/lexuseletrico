@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, ShoppingBag } from "lucide-react";
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 import {
   cartTotal,
   formatBRL,
@@ -20,19 +19,10 @@ export default function Checkout() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [idempotencyKey] = useState(() => crypto.randomUUID());
-  const createOrder = trpc.orders.create.useMutation({
-    onSuccess: (result) => {
-      setSuccess(result.message);
-      setError("");
-    },
-    onError: (mutationError) => {
-      setError(mutationError.message || "Não foi possível iniciar o pedido.");
-      setSuccess("");
-    },
-  });
+  const [orderLoading, setOrderLoading] = useState(false);
   const total = useMemo(() => cartTotal(lines), [lines]);
 
-  const submitOrder = () => {
+  const submitOrder = async () => {
     if (!isAuthenticated) {
       startLogin();
       return;
@@ -41,10 +31,32 @@ export default function Checkout() {
       setError("Adicione uma configuração ao carrinho antes de continuar.");
       return;
     }
-    createOrder.mutate({
-      idempotencyKey,
-      lines: lines.map(({ productId, variant, quantity }) => ({ productId, variant, quantity })),
-    });
+
+    setOrderLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const response = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          idempotencyKey,
+          lines: lines.map(({ productId, variant, quantity }) => ({ productId, variant, quantity })),
+        }),
+      });
+      const data = await response.json().catch(() => ({})) as { message?: string; error?: string };
+      if (response.status === 401) {
+        startLogin();
+        return;
+      }
+      if (!response.ok) throw new Error(data.error || "Não foi possível iniciar o pedido.");
+      setSuccess(data.message || "Pedido validado com sucesso.");
+    } catch (orderError) {
+      setError(orderError instanceof Error ? orderError.message : "Não foi possível iniciar o pedido.");
+    } finally {
+      setOrderLoading(false);
+    }
   };
 
   return (
@@ -69,9 +81,9 @@ export default function Checkout() {
             <div className="checkout-security-list"><div><ShieldCheck size={17} /><span>Preço validado no servidor</span></div><div><ShieldCheck size={17} /><span>Pagamento só é confirmado pelo provedor</span></div><div><ShieldCheck size={17} /><span>Credenciais nunca chegam ao navegador</span></div></div>
             {error && <div className="form-message error" role="alert">{error}</div>}
             {success && <div className="form-message success" role="status">{success}</div>}
-            <button className="button button-dark button-wide checkout-submit" onClick={submitOrder} disabled={createOrder.isPending || loading || lines.length === 0}>
-              {createOrder.isPending ? "Validando pedido…" : isAuthenticated ? "Validar pedido" : "Entrar e continuar"}
-              {!createOrder.isPending && <ArrowRight size={17} />}
+            <button className="button button-dark button-wide checkout-submit" onClick={submitOrder} disabled={orderLoading || loading || lines.length === 0}>
+              {orderLoading ? "Validando pedido…" : isAuthenticated ? "Validar pedido" : "Entrar e continuar"}
+              {!orderLoading && <ArrowRight size={17} />}
             </button>
             <p className="checkout-disclaimer">Nenhum pagamento é considerado aprovado por uma informação enviada pelo navegador.</p>
           </section>

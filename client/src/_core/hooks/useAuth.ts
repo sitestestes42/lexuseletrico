@@ -1,7 +1,13 @@
 import { startLogin } from "@/const";
-import { trpc } from "@/lib/trpc";
-import { TRPCClientError } from "@trpc/client";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+export type AuthUser = {
+  authId: string;
+  name: string | null;
+  email: string | null;
+  loginMethod: string | null;
+  role: "user" | "admin";
+};
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -10,45 +16,60 @@ type UseAuthOptions = {
 
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
-  const utils = trpc.useUtils();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => utils.auth.me.setData(undefined, null),
-  });
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
+      const data = await response.json().catch(() => ({})) as { user?: AuthUser | null; error?: string };
+      if (!response.ok) throw new Error(data.error || "Não foi possível validar sua sessão.");
+      setUser(data.user ?? null);
+      return data.user ?? null;
+    } catch (authError) {
+      const normalized = authError instanceof Error ? authError : new Error("Não foi possível validar sua sessão.");
+      setError(normalized);
+      setUser(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const logout = useCallback(async () => {
+    setLoading(true);
     try {
-      await logoutMutation.mutateAsync();
-    } catch (error: unknown) {
-      if (!(error instanceof TRPCClientError) || error.data?.code !== "UNAUTHORIZED") throw error;
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
     } finally {
-      utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+      setUser(null);
+      setLoading(false);
     }
-  }, [logoutMutation, utils]);
-
-  const state = useMemo(
-    () => ({
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
-      error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
-    }),
-    [meQuery.data, meQuery.error, meQuery.isLoading, logoutMutation.error, logoutMutation.isPending],
-  );
+  }, []);
 
   useEffect(() => {
-    if (!redirectOnUnauthenticated || meQuery.isLoading || logoutMutation.isPending || state.user) return;
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!redirectOnUnauthenticated || loading || user) return;
     if (typeof window === "undefined") return;
     if (redirectPath && window.location.pathname === redirectPath) return;
     if (redirectPath) window.location.href = redirectPath;
     else startLogin();
-  }, [redirectOnUnauthenticated, redirectPath, logoutMutation.isPending, meQuery.isLoading, state.user]);
+  }, [loading, redirectOnUnauthenticated, redirectPath, user]);
 
-  return { ...state, refresh: () => meQuery.refetch(), logout };
+  return {
+    user,
+    loading,
+    error,
+    isAuthenticated: Boolean(user),
+    refresh,
+    logout,
+  };
 }
