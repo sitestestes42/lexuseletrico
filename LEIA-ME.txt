@@ -1,16 +1,22 @@
-PATCH V6 — hCaptcha + Supabase Auth
+PATCH V7 - CHECKOUT / PEDIDOS NATIVO PARA VERCEL
 
-Arquivos alterados:
-- client/src/pages/Login.tsx
-- client/src/index.css
-- api/auth/login.ts
-- api/auth/signup.ts
+O login já está funcionando. Este patch corrige apenas a criação do pedido.
 
-O site exibe hCaptcha em Entrar/Criar conta, envia captchaToken à API e a API repassa ao Supabase como gotrue_meta_security.captcha_token.
+1) No GitHub, substitua:
+   api/orders/create.ts
 
-Vercel:
-VITE_HCAPTCHA_SITEKEY=089a13f6-f6e0-4982-9604-b9e4f5021192
+2) Confirme no Vercel que existem:
+   SUPABASE_URL
+   SUPABASE_PUBLISHABLE_KEY
+   SUPABASE_SECRET_KEY
 
-A sitekey é pública. A SECRET do hCaptcha deve ficar APENAS no Supabase > Authentication > Attack Protection.
+3) Se o checkout responder que as tabelas ainda não existem, abra:
+   Supabase -> SQL Editor -> New query
+   e execute o conteúdo de:
+   supabase/checkout.sql
 
-Depois do upload no GitHub, espere o deploy e teste /entrar.
+4) Depois teste novamente /checkout.
+
+O endpoint valida a sessão no Supabase Auth, recalcula o preço no servidor,
+evita pedido duplicado por idempotência e grava users/orders/order_items via Data API.
+A SUPABASE_SECRET_KEY fica somente no backend e nunca é enviada ao navegador.
